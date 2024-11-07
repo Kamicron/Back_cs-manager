@@ -9,8 +9,8 @@ export class UserController {
 
   // CREATE: Endpoint pour créer un utilisateur
   @Post()
-  async create(@Body('username') username: string): Promise<User> {
-    return this.userService.create(username);
+  async create(@Body('username') username: string, @Body('password') password: string): Promise<User> {
+    return this.userService.create(username, password); // Passe les deux arguments
   }
 
   // READ: Endpoint pour récupérer tous les utilisateurs
@@ -21,14 +21,14 @@ export class UserController {
 
   // READ: Endpoint pour récupérer un utilisateur par ID
   @Get(':id')
-  async findOne(@Param('id') id: number): Promise<User | null> {
+  async findOne(@Param('id') id: string): Promise<User | null> {
     return this.userService.findOne(id);
   }
 
   // UPDATE: Endpoint pour mettre à jour un utilisateur
   @Put(':id')
   async update(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body('username') username: string,
   ): Promise<User> {
     return this.userService.update(id, username);
@@ -36,7 +36,7 @@ export class UserController {
 
   // DELETE: Endpoint pour supprimer un utilisateur
   @Delete(':id')
-  async delete(@Param('id') id: number): Promise<void> {
+  async delete(@Param('id') id: string): Promise<void> {
     return this.userService.delete(id);
   }
 }

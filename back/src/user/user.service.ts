@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -12,8 +13,9 @@ export class UserService {
   ) {}
 
   // CREATE: Ajouter un nouvel utilisateur
-  async create(username: string): Promise<User> {
-    const newUser = this.userRepository.create({ username });
+  async create(username: string, password: string): Promise<User> {
+    const hashedPassword = await bcrypt.hash(password, 10);  // Hachage du mot de passe
+    const newUser = this.userRepository.create({ username, password: hashedPassword });
     return this.userRepository.save(newUser);
   }
 
@@ -23,18 +25,22 @@ export class UserService {
   }
 
   // READ: Récupérer un utilisateur par son _id
-  async findOne(id: number): Promise<User | null> {
+  async findOne(id: string): Promise<User | null> {
     return this.userRepository.findOneBy({ _id: id });
   }
 
+  async findByUsername(username: string): Promise<User | undefined> {
+    return this.userRepository.findOneBy({ username });
+  }
+
   // UPDATE: Mettre à jour un utilisateur
-  async update(id: number, username: string): Promise<User> {
+  async update(id: string, username: string): Promise<User> {
     await this.userRepository.update(id, { username });
     return this.findOne(id); // Renvoyer l'utilisateur mis à jour
   }
 
   // DELETE: Supprimer un utilisateur
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.userRepository.delete(id);
   }
 }
