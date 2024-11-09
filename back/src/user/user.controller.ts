@@ -8,10 +8,13 @@ import {
   Param,
   Body,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './user.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('users') // Route de base pour les utilisateurs
 export class UserController {
@@ -27,7 +30,9 @@ export class UserController {
   }
 
   // READ: Endpoint pour récupérer tous les utilisateurs (requiert une authentification)
-  @UseGuards(JwtAuthGuard)
+  // Route accessible uniquement aux administrateurs
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Get()
   async findAll(): Promise<User[]> {
     return this.userService.findAll();
@@ -36,8 +41,18 @@ export class UserController {
   // READ: Endpoint pour récupérer un utilisateur par ID (requiert une authentification)
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<User | null> {
-    return this.userService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<Partial<User>> {
+    const currentUser = req.user;
+    const user = await this.userService.findOne(id);
+
+    if (currentUser.userId === id || currentUser.isAdmin) {
+      return user; // Toutes les données si admin ou propriétaire
+    }
+
+    return { username: user.username, level: user.level }; // Données publiques pour les autres
   }
 
   // UPDATE: Endpoint pour mettre à jour un utilisateur (requiert une authentification)

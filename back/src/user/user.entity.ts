@@ -2,12 +2,20 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn('uuid')  // Utilisation d'UUID pour l'ID
+  @PrimaryGeneratedColumn('uuid')
   _id: string;
 
-  @Column()
+  @Column({ unique: true })
   username: string;
 
   @Column()
-  password: string;  // On va hasher ce champ plus tard
+  password: string;
+
+  // Ajout d'un booléen pour l'admin
+  @Column({ default: false })
+  isAdmin: boolean;
+
+  // Propriété "level" qui sera publique
+  @Column({ default: 1 })
+  level: number;
 }
