@@ -18,4 +18,14 @@ export class User {
   // Propriété "level" qui sera publique
   @Column({ default: 1 })
   level: number;
+
+  @Column({ type: 'datetime' })
+  created_at: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  last_login: Date;
+
+  @Column({ type: 'datetime', nullable: true })
+  deleted_at: Date;
+
 }

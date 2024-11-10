@@ -21,12 +21,12 @@ export class UserService {
 
   // READ: Récupérer tous les utilisateurs
   async findAll(): Promise<User[]> {
-    return this.userRepository.find();
+    return this.userRepository.find({ where: { deleted_at: null } });
   }
 
   // READ: Récupérer un utilisateur par son _id
   async findOne(id: string): Promise<User | null> {
-    return this.userRepository.findOneBy({ _id: id });
+    return this.userRepository.findOne({ where: { _id: id, deleted_at: null } });
   }
 
   async findByUsername(username: string): Promise<User | undefined> {
@@ -42,5 +42,13 @@ export class UserService {
   // DELETE: Supprimer un utilisateur
   async delete(id: string): Promise<void> {
     await this.userRepository.delete(id);
+  }
+
+  async updateUserLastLogin(user: User): Promise<void> {
+    await this.userRepository.save(user);
+  }
+
+  async softDelete(userId: string): Promise<void> {
+    await this.userRepository.update(userId, { deleted_at: new Date() });
   }
 }

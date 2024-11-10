@@ -13,7 +13,7 @@ export class AuthService {
 
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.userService.findByUsername(username);
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (user && !user.deleted_at && (await bcrypt.compare(password, user.password))) {
       const { password, ...result } = user;
       return result;
     }
@@ -23,7 +23,9 @@ export class AuthService {
   async login(user: any) {
     // Récupérer l'utilisateur complet avec ses informations (isAdmin, level, etc.)
     const fullUser = await this.userService.findOne(user._id);
-    console.log('fullUser', fullUser);
+
+    fullUser.last_login = new Date();
+    await this.userService.updateUserLastLogin(fullUser);
 
     const payload = {
       username: fullUser.username,
