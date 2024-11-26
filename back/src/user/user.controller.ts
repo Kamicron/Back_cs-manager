@@ -9,29 +9,29 @@ import {
   Body,
   UseGuards,
   Request,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './user.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { ForbiddenException } from '@nestjs/common';
 
 @Controller('users') // Route de base pour les utilisateurs
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // CREATE: Endpoint pour créer un utilisateur (accessible à tous)
+  // CREATE: Endpoint pour créer un utilisateur
   @Post()
   async create(
     @Body('username') username: string,
     @Body('password') password: string,
   ): Promise<User> {
-    return this.userService.create(username, password); // Passe les deux arguments
+    return this.userService.create(username, password);
   }
 
-  // READ: Endpoint pour récupérer tous les utilisateurs (requiert une authentification)
-  // Route accessible uniquement aux administrateurs
+  // READ: Récupérer tous les utilisateurs
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get()
@@ -39,7 +39,7 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  // READ: Endpoint pour récupérer un utilisateur par ID (requiert une authentification)
+  // READ: Récupérer un utilisateur par ID
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(
@@ -50,40 +50,65 @@ export class UserController {
     const user = await this.userService.findOne(id);
 
     if (currentUser.userId === id || currentUser.isAdmin) {
-      return user; // Toutes les données si admin ou propriétaire
+      return user;
     }
 
-    return { username: user.username, level: user.level }; // Données publiques pour les autres
+    return { username: user.username }; // Données limitées pour les autres
   }
 
-// UPDATE: Endpoint pour mettre à jour un utilisateur (requiert une authentification)
-@UseGuards(JwtAuthGuard)
-@Put(':id')
-async update(
-  @Param('id') id: string,
-  @Body('username') username: string,
-  @Request() req,
-): Promise<User> {
-  const currentUser = req.user;
-
-  // Vérifie si l'utilisateur est le propriétaire du profil ou un administrateur
-  if (currentUser.userId === id || currentUser.isAdmin) {
-    return this.userService.update(id, username);
+  // UPDATE: Mise à jour utilisateur
+  @UseGuards(JwtAuthGuard)
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: { username?: string; currentPassword?: string; newPassword?: string; confirmPassword?: string },
+    @Request() req,
+  ): Promise<User> {
+    const currentUser = req.user;
+  
+    if (currentUser.userId !== id && !currentUser.isAdmin) {
+      throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier ce profil.');
+    }
+  
+    const { username, currentPassword, newPassword, confirmPassword } = body;
+  
+    if (!username && !newPassword) {
+      throw new BadRequestException('Aucune donnée à mettre à jour.');
+    }
+  
+    if (newPassword) {
+      if (!currentPassword) {
+        throw new BadRequestException('Le mot de passe actuel est requis pour changer le mot de passe.');
+      }
+  
+      const isPasswordValid = await this.userService.validatePassword(id, currentPassword);
+      if (!isPasswordValid) {
+        throw new ForbiddenException('Le mot de passe actuel est incorrect.');
+      }
+  
+      if (!confirmPassword || newPassword !== confirmPassword) {
+        throw new BadRequestException('Les mots de passe ne correspondent pas.');
+      }
+    }
+  
+    const updatedUser = await this.userService.update(id, {
+      ...(username && { username }),
+      ...(newPassword && { password: newPassword }),
+    });
+  
+    return updatedUser;
   }
 
-  throw new ForbiddenException('Vous n\'êtes pas autorisé à modifier ce profil.');
-}
-
-  // DELETE: Endpoint pour supprimer un utilisateur (requiert une authentification)
+  // DELETE: Suppression logique d'un utilisateur
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async deleteUser(@Param('id') id: string, @Request() req): Promise<void> {
     const currentUser = req.user;
-  
+
     if (currentUser.userId === id || currentUser.isAdmin) {
       return this.userService.softDelete(id);
     }
-  
+
     throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer ce compte.');
   }
 }

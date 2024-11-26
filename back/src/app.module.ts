@@ -9,8 +9,6 @@ import { config } from 'dotenv';
 import { ProtectedController } from './protected/protected.controller';
 config();
 
-console.log("process.env.DB_USERNAME",process.env.DB_USERNAME)
-
 @Module({
   imports: [
     TypeOrmModule.forRoot({
