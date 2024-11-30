@@ -17,6 +17,7 @@ import { User } from './user.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { UserDto } from './user.dto';
 
 @Controller('users') // Route de base pour les utilisateurs
 export class UserController {
@@ -35,7 +36,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get()
-  async findAll(): Promise<User[]> {
+  async findAll(): Promise<UserDto[]> {
     return this.userService.findAll();
   }
 

@@ -24,8 +24,8 @@ export class AuthService {
     // Récupérer l'utilisateur complet avec ses informations (isAdmin, level, etc.)
     const fullUser = await this.userService.findOne(user._id);
 
-    fullUser.last_login = new Date();
-    await this.userService.updateUserLastLogin(fullUser);
+    fullUser.dates.last_login = new Date();
+    // await this.userService.updateUserLastLogin(fullUser);
 
     const payload = {
       username: fullUser.username,
